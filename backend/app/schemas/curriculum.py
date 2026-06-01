@@ -1,8 +1,5 @@
-"""
-Pydantic schemas for Curriculum.
-"""
+from pydantic import BaseModel, Field
 from typing import List, Optional
-from pydantic import BaseModel
 
 class CurriculumBase(BaseModel):
     title: str
@@ -16,7 +13,7 @@ class CurriculumCreate(CurriculumBase):
 class CurriculumUpdate(CurriculumBase):
     pass
 
-class Curriculum(CurriculumBase):
+class CurriculumRead(CurriculumBase):
     id: int
 
     class Config:

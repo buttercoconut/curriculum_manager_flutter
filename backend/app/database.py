@@ -1,10 +1,21 @@
-"""
-SQLAlchemy async engine and session maker.
-"""
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from .models.base import Base
 
-DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/curriculum_db"
+DATABASE_URL = "postgresql+psycopg2://user:password@localhost:5432/curriculum_db"
 
-engine = create_async_engine(DATABASE_URL, echo=False)
-async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+engine = create_engine(DATABASE_URL, echo=False)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Create tables
+Base.metadata.create_all(bind=engine)
+
+# Dependency
+from fastapi import Depends
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
