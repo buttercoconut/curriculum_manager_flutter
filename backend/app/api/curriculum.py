@@ -1,34 +1,45 @@
+"""FastAPI router for Curriculum endpoints."""
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from ..database import get_db
-from ..models.curriculum import Curriculum as CurriculumModel
+from typing import List
+
+from ..models.curriculum import Curriculum, CurriculumCreate, CurriculumUpdate
 from ..services.curriculum_service import CurriculumService
-from ..schemas.curriculum import CurriculumCreate, CurriculumRead, CurriculumUpdate
+from ..database import get_db
 
-router = APIRouter()
+router = APIRouter(prefix="/curriculums", tags=["curriculums"])
 
-@router.post("/", response_model=CurriculumRead, status_code=status.HTTP_201_CREATED)
-def create_curriculum(curriculum: CurriculumCreate, db: Session = Depends(get_db)):
+@router.get("/", response_model=List[Curriculum])
+async def read_curriculums(db: Session = Depends(get_db)):
     service = CurriculumService(db)
-    return service.create(curriculum)
+    return service.get_all()
 
-@router.get("/", response_model=list[CurriculumRead])
-def list_curriculums(db: Session = Depends(get_db)):
+@router.get("/{curriculum_id}", response_model=Curriculum)
+async def read_curriculum(curriculum_id: int, db: Session = Depends(get_db)):
     service = CurriculumService(db)
-    return service.list_all()
+    curriculum = service.get_by_id(curriculum_id)
+    if not curriculum:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Curriculum not found")
+    return curriculum
 
-@router.get("/{curriculum_id}", response_model=CurriculumRead)
-def get_curriculum(curriculum_id: int, db: Session = Depends(get_db)):
+@router.post("/", response_model=Curriculum, status_code=status.HTTP_201_CREATED)
+async def create_curriculum(curriculum_in: CurriculumCreate, db: Session = Depends(get_db)):
     service = CurriculumService(db)
-    return service.get(curriculum_id)
+    return service.create(curriculum_in)
 
-@router.put("/{curriculum_id}", response_model=CurriculumRead)
-def update_curriculum(curriculum_id: int, curriculum: CurriculumUpdate, db: Session = Depends(get_db)):
+@router.put("/{curriculum_id}", response_model=Curriculum)
+async def update_curriculum(curriculum_id: int, curriculum_in: CurriculumUpdate, db: Session = Depends(get_db)):
     service = CurriculumService(db)
-    return service.update(curriculum_id, curriculum)
+    updated = service.update(curriculum_id, curriculum_in)
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Curriculum not found")
+    return updated
 
 @router.delete("/{curriculum_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_curriculum(curriculum_id: int, db: Session = Depends(get_db)):
+async def delete_curriculum(curriculum_id: int, db: Session = Depends(get_db)):
     service = CurriculumService(db)
-    service.delete(curriculum_id)
+    success = service.delete(curriculum_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Curriculum not found")
     return None

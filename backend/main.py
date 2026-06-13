@@ -1,27 +1,51 @@
-"""
-FastAPI application entry point for Curriculum Manager backend.
-"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 
-from app.api import curriculum, student, grade
+# Database setup
+DATABASE_URL = "sqlite:///./test.db"
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
-app = FastAPI(title="Curriculum Manager API", version="1.0.0")
+# Import models to create tables
+from .models import curriculum, student, grade
 
-# CORS for Flutter mobile app (localhost:3000 for dev)
+# Create tables
+Base.metadata.create_all(bind=engine)
+
+# Dependency
+from fastapi import Depends
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# FastAPI app
+app = FastAPI(title="Curriculum Manager API")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, restrict to specific origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Include routers
-app.include_router(curriculum.router, prefix="/curriculum", tags=["Curriculum"])
-app.include_router(student.router, prefix="/student", tags=["Student"])
-app.include_router(grade.router, prefix="/grade", tags=["Grade"])
+from .api import curriculum as curriculum_router
+from .api import student as student_router
+from .api import grade as grade_router
 
-@app.get("/health")
-async def health_check():
-    return {"status": "ok"}
+app.include_router(curriculum_router)
+app.include_router(student_router)
+app.include_router(grade_router)
+
+# Root endpoint
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to Curriculum Manager API"}

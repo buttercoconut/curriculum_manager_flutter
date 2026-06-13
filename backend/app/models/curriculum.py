@@ -1,15 +1,25 @@
-from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey
-from sqlalchemy.orm import relationship
-from .base import Base
+"""Pydantic models for Curriculum entity."""
 
-class Curriculum(Base):
-    __tablename__ = "curriculums"
+from pydantic import BaseModel, Field
+from typing import List
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(255), nullable=False)
-    description = Column(Text, nullable=True)
-    grade_level = Column(Integer, nullable=False)
-    subjects = Column(JSON, nullable=False)
+class CurriculumBase(BaseModel):
+    title: str = Field(..., example="Mathematics 10th Grade")
+    description: str | None = Field(None, example="Basic algebra and geometry")
+    grade_level: int = Field(..., example=10)
+    subjects: List[str] = Field(..., example=["Algebra", "Geometry", "Trigonometry"])
 
-    students = relationship("Student", back_populates="curriculum")
-    teachers = relationship("Teacher", back_populates="curriculum")
+class CurriculumCreate(CurriculumBase):
+    pass
+
+class CurriculumUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    grade_level: int | None = None
+    subjects: List[str] | None = None
+
+class Curriculum(CurriculumBase):
+    id: int
+
+    class Config:
+        orm_mode = True

@@ -1,14 +1,24 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey
-from sqlalchemy.orm import relationship
-from .base import Base
+"""Pydantic models for Student entity."""
 
-class Student(Base):
-    __tablename__ = "students"
+from pydantic import BaseModel, Field
+from typing import Optional
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(255), nullable=False)
-    email = Column(String(255), unique=True, nullable=False)
-    curriculum_id = Column(Integer, ForeignKey("curriculums.id"))
+class StudentBase(BaseModel):
+    student_id: str = Field(..., example="S12345")
+    name: str = Field(..., example="홍길동")
+    grade: int = Field(..., example=10)
+    class_name: str = Field(..., example="1반")
 
-    curriculum = relationship("Curriculum", back_populates="students")
-    grades = relationship("Grade", back_populates="student")
+class StudentCreate(StudentBase):
+    pass
+
+class StudentUpdate(BaseModel):
+    name: Optional[str] = None
+    grade: Optional[int] = None
+    class_name: Optional[str] = None
+
+class Student(StudentBase):
+    id: int
+
+    class Config:
+        orm_mode = True

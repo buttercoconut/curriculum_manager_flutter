@@ -1,34 +1,45 @@
+"""FastAPI router for Grade endpoints."""
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from ..database import get_db
-from ..models.grade import Grade as GradeModel
+from typing import List
+
+from ..models.grade import Grade, GradeCreate, GradeUpdate
 from ..services.grade_service import GradeService
-from ..schemas.grade import GradeCreate, GradeRead, GradeUpdate
+from ..database import get_db
 
-router = APIRouter()
+router = APIRouter(prefix="/grades", tags=["grades"])
 
-@router.post("/", response_model=GradeRead, status_code=status.HTTP_201_CREATED)
-def create_grade(grade: GradeCreate, db: Session = Depends(get_db)):
+@router.get("/", response_model=List[Grade])
+async def read_grades(db: Session = Depends(get_db)):
     service = GradeService(db)
-    return service.create(grade)
+    return service.get_all()
 
-@router.get("/", response_model=list[GradeRead])
-def list_grades(db: Session = Depends(get_db)):
+@router.get("/{grade_id}", response_model=Grade)
+async def read_grade(grade_id: int, db: Session = Depends(get_db)):
     service = GradeService(db)
-    return service.list_all()
+    grade = service.get_by_id(grade_id)
+    if not grade:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Grade not found")
+    return grade
 
-@router.get("/{grade_id}", response_model=GradeRead)
-def get_grade(grade_id: int, db: Session = Depends(get_db)):
+@router.post("/", response_model=Grade, status_code=status.HTTP_201_CREATED)
+async def create_grade(grade_in: GradeCreate, db: Session = Depends(get_db)):
     service = GradeService(db)
-    return service.get(grade_id)
+    return service.create(grade_in)
 
-@router.put("/{grade_id}", response_model=GradeRead)
-def update_grade(grade_id: int, grade: GradeUpdate, db: Session = Depends(get_db)):
+@router.put("/{grade_id}", response_model=Grade)
+async def update_grade(grade_id: int, grade_in: GradeUpdate, db: Session = Depends(get_db)):
     service = GradeService(db)
-    return service.update(grade_id, grade)
+    updated = service.update(grade_id, grade_in)
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Grade not found")
+    return updated
 
 @router.delete("/{grade_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_grade(grade_id: int, db: Session = Depends(get_db)):
+async def delete_grade(grade_id: int, db: Session = Depends(get_db)):
     service = GradeService(db)
-    service.delete(grade_id)
+    success = service.delete(grade_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Grade not found")
     return None

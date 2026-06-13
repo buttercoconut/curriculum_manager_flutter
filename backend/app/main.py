@@ -1,13 +1,16 @@
+"""FastAPI application entry point."""
+
 from fastapi import FastAPI
-from .api import curriculum, student, grade
+from .api import curriculum as curriculum_router, student as student_router, grade as grade_router
 
 app = FastAPI(title="Curriculum Manager API")
 
-app.include_router(curriculum.router, prefix="/curriculum", tags=["Curriculum"])
-app.include_router(student.router, prefix="/student", tags=["Student"])
-app.include_router(grade.router, prefix="/grade", tags=["Grade"])
+app.include_router(curriculum_router.router)
+app.include_router(student_router.router)
+app.include_router(grade_router.router)
 
-# Health check
-@app.get("/health")
-async def health_check():
-    return {"status": "ok"}
+# Create tables on startup
+@app.on_event("startup")
+async def startup_event():
+    from .database import Base, engine
+    Base.metadata.create_all(bind=engine)

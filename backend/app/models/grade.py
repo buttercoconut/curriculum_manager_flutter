@@ -1,14 +1,22 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey
-from sqlalchemy.orm import relationship
-from .base import Base
+"""Pydantic models for Grade entity."""
 
-class Grade(Base):
-    __tablename__ = "grades"
+from pydantic import BaseModel, Field
+from typing import Optional
 
-    id = Column(Integer, primary_key=True, index=True)
-    student_id = Column(Integer, ForeignKey("students.id"))
-    subject = Column(String(255), nullable=False)
-    score = Column(Float, nullable=False)
-    comments = Column(String(255), nullable=True)
+class GradeBase(BaseModel):
+    student_id: int = Field(..., example=1)
+    curriculum_id: int = Field(..., example=1)
+    subject: str = Field(..., example="Algebra")
+    score: float = Field(..., example=85.5)
 
-    student = relationship("Student", back_populates="grades")
+class GradeCreate(GradeBase):
+    pass
+
+class GradeUpdate(BaseModel):
+    score: Optional[float] = None
+
+class Grade(GradeBase):
+    id: int
+
+    class Config:
+        orm_mode = True
